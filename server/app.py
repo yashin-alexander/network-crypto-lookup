@@ -37,11 +37,14 @@ def lookup_ips():
 
 def get_machine_identifer(ip):
     global prvkey, pubkey
-    ip = '0.0.0.0'
     url = 'http://{}:{}/encrypted_identifer'.format(ip, CLIENT_APP_PORT)
-    response = requests.post(url,
-                             data=pubkey.encode(),
-                             headers={'Content-Type': 'application/octet-stream'})
+    try:
+        response = requests.post(url,
+                                 data=pubkey.encode(),
+                                 headers={'Content-Type': 'application/octet-stream'},
+                                 timeout=5)
+    except requests.exceptions.ConnectionError:
+        return None
     if not response.ok:
         return None
     encrypted_machine_identifer = response.content
@@ -53,8 +56,13 @@ def get_machine_identifer(ip):
 def lookup_machines():
     network_ips = lookup()
     machine_identifers = {}
+    print("Networks detected: {}".format(network_ips))
     for ip in network_ips:
-        machine_identifer = get_machine_identifer(ip).decode()
-        if machine_identifer:
-            machine_identifers.update({ip: machine_identifer})
+        machine_identifer = get_machine_identifer(ip)
+        if not machine_identifer:
+            print('Failed to connect to {}'.format(ip))
+            continue
+        print('{} connection successfull'.format(ip))
+        decoded_identifer = machine_identifer.decode()
+        machine_identifers.update({ip: decoded_identifer})
     return json.dumps(machine_identifers)
