@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+  position: absolute;
+  top: 30%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+
+input {
+  position: absolute;
+  top: 10%;
+  left: 46.25%;
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+input:disabled,
+input[disabled]{
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+#identifers {
+  text-align: center;
+}
+.loader {
+  position: absolute;
+  left: 45%;
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+    <meta charset="UTF-8">
+    <title>Network lookup</title>
+    <script type=text/javascript src="{{ url_for('static', filename='js/jquery-3.4.1.js') }}"></script>
+</head>
+<body>
+    <script>
+        function get_machine_identifers() {
+            $.ajax({
+                type: "POST",
+                url: "/lookup_machines",
+                data: $('form').serialize(),
+                type: 'GET',
+                beforeSend: function() {
+                    $('#send').attr('disabled', 'true');
+                    $('#identifers').empty();
+                    $('#identifers').append('<div class="loader"></div>')
+                },
+                success: function (response) {
+                    var json = jQuery.parseJSON(response);
+                    var tr;
+                    $('#identifers').empty();
+                    console.log(json)
+                    $('#send').removeAttr('disabled');
+                    for (var key in json) {
+                        tr = $('<tr/>');
+                        tr.append("<td>" + key + "</td>");
+                        tr.append("<td>" + json[key] + "</td>");
+                        $('#identifers').append(tr);
+                    }
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+    </script>
+    <form action="/lookup_machines" method="get" name="form">
+        <input type="button" id='send' value="LOOKUP" onclick="get_machine_identifers();">
+      </div>
+    </form>
+    <table id="identifers"></table>
+</body>
+</html>

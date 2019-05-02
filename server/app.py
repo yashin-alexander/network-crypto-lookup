@@ -1,7 +1,10 @@
 import requests
-from flask import Flask
+import json
+
+from flask import Flask, render_template
 from ecies.utils import generate_key
 from ecies import decrypt
+
 from lookup_manager import lookup
 
 
@@ -21,6 +24,12 @@ network_ips = []
 machine_identifers = {}
 
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/lookup_ips')
 def lookup_ips():
     network_ips = lookup()
     return "Some ip's detected: {}".format(network_ips)
@@ -40,12 +49,12 @@ def get_machine_identifer(ip):
     return machine_identifer
 
 
-@app.route('/lookup_machines')
+@app.route('/lookup_machines', methods=['GET'])
 def lookup_machines():
     network_ips = lookup()
     machine_identifers = {}
     for ip in network_ips:
-        machine_identifer = get_machine_identifer(ip)
+        machine_identifer = get_machine_identifer(ip).decode()
         if machine_identifer:
             machine_identifers.update({ip: machine_identifer})
-    return str(machine_identifers)
+    return json.dumps(machine_identifers)
