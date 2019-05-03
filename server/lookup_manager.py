@@ -1,41 +1,16 @@
 import multiprocessing
-import subprocess
+import requests
 import socket
-import os
 import re
+
+from ecies import decrypt
 
 
 LOCALHOST = "8.8.8.8"
 LOCALHOST_PORT = 80
 DEFAULT_POOL_SIZE = 255
 ADDRESSES_RANGE = 255
-
-
-def ping_worker(jobs_queue):
-    """Ping worker implementation.
-
-    Parameters
-    ----------
-    jobs_queue : Queue
-    results_queue : Queue
-
-    Returns
-    -------
-    None
-    """
-    DEVNULL = open(os.devnull, 'w')
-    results = []
-    while True:
-        ip = jobs_queue.get()
-
-        if ip is None:
-            return results
-        try:
-            subprocess.check_call(['ping', '-c1', ip], stdout=DEVNULL)
-        except subprocess.CalledProcessError:
-            pass
-        else:
-            results.append(ip)
+CLIENT_APP_PORT = 5000
 
 
 class LookupManager():
@@ -48,8 +23,10 @@ class LookupManager():
         List of network ip's
 
     """
-    def __init__(self):
-        self.network_ips = []
+    def __init__(self, pubkey, prvkey):
+        self. machine_identifers = {}
+        self.pubkey = pubkey
+        self.prvkey = prvkey
 
     @property
     def localhost_ip(self):
@@ -64,32 +41,59 @@ class LookupManager():
         return re.sub('[^.]*$', '', self.localhost_ip)
 
     def _worker_cb(self, result):
-        self.network_ips.extend(result)
+        self.machine_identifers.update(result)
 
     def process_lookup(self, pool_size=DEFAULT_POOL_SIZE):
         ip_base = self._local_network_ip_base
         manager_jobs = multiprocessing.Manager()
-        jobs_queue = manager_jobs.Queue()
+        ips_queue = manager_jobs.Queue()
         pool = multiprocessing.Pool(processes=DEFAULT_POOL_SIZE)
 
         for _ in range(1, pool_size):
-            pool.apply_async(ping_worker, args=(jobs_queue,), callback=self._worker_cb)
+            pool.apply_async(self.get_machine_identifer, args=(ips_queue,), callback=self._worker_cb)
 
         for i in range(1, ADDRESSES_RANGE):
-            jobs_queue.put('{}{}'.format(ip_base, i))
+            ips_queue.put('{}{}'.format(ip_base, i))
 
         for process in range(1, pool_size):
-            jobs_queue.put(None)
+            ips_queue.put(None)
 
         pool.close()
         pool.join()
 
+    def get_machine_identifer(self, ips_queue):
+        """Ping worker implementation.
 
-def lookup():
-    lookup_manager = LookupManager()
+        Parameters
+        ----------
+        jobs_queue : Queue
+
+        Returns
+        -------
+        None
+        """
+        machine_identifers = {}
+
+        while True:
+            ip = ips_queue.get()
+            if ip is None:
+                return machine_identifers
+            url = 'http://{}:{}/encrypted_identifer'.format(ip, CLIENT_APP_PORT)
+            try:
+                response = requests.post(url,
+                                         data=self.pubkey.encode(),
+                                         headers={'Content-Type': 'application/octet-stream'},
+                                         timeout=5)
+            except requests.exceptions.ConnectionError:
+                continue
+            if not response.ok:
+                continue
+            encrypted_machine_identifer = response.content
+            machine_identifer = decrypt(self.prvkey, encrypted_machine_identifer)
+            machine_identifers.update({ip: machine_identifer.decode()})
+
+
+def lookup(pubkey, prvkey):
+    lookup_manager = LookupManager(pubkey, prvkey)
     lookup_manager.process_lookup()
-    return lookup_manager.network_ips
-
-
-if __name__ == '__main__':
-    print(lookup())
+    return lookup_manager.machine_identifers
