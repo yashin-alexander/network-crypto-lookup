@@ -1,7 +1,9 @@
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from secrets import token_bytes
 
@@ -9,8 +11,14 @@ from secrets import token_bytes
 class DiffieHellman:
     def __init__(self):
         self.diffie_hellman = ec.generate_private_key(ec.SECP384R1(), default_backend())
-        self.public_key = self.diffie_hellman.public_key()
+        self._public_key = self.diffie_hellman.public_key()
         self.IV = None
+
+    @property
+    def pem_pubkey(self):
+        pem = self._public_key.public_bytes(encoding=serialization.Encoding.PEM,
+                                            format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        return pem
 
     def encrypt(self, opposite_public_key, secret):
         self.IV = token_bytes(16)
@@ -46,3 +54,7 @@ class DiffieHellman:
 
         unpadder = padding.PKCS7(128).unpadder()
         return unpadder.update(decrypted_data) + unpadder.finalize()
+
+
+def load_pem_pubkey(pem):
+    return load_pem_public_key(pem, default_backend())
