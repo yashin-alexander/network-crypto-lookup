@@ -5,9 +5,7 @@ import re
 
 from ecies import decrypt
 
-
-LOCALHOST = "8.8.8.8"
-LOCALHOST_PORT = 80
+DNS = "8.8.8.8"
 DEFAULT_POOL_SIZE = 255
 ADDRESSES_RANGE = 255
 CLIENT_APP_PORT = 5000
@@ -31,7 +29,7 @@ class LookupManager():
     @property
     def localhost_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect((LOCALHOST, LOCALHOST_PORT))
+        s.connect((DNS, 80))
         ip = s.getsockname()[0]
         s.close()
         return ip
