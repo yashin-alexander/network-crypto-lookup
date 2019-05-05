@@ -22,7 +22,7 @@ class LookupManager():
 
     """
     def __init__(self, pubkey, prvkey):
-        self. machine_identifers = {}
+        self.machine_identifers = {}
         self.pubkey = pubkey
         self.prvkey = prvkey
 
