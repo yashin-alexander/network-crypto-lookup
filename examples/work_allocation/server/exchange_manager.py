@@ -88,3 +88,8 @@ def process_keys_exchange(pubkey):
     exchange_manager = KeysExchangeManager(pubkey)
     exchange_manager.process_exchange()
     return exchange_manager.worker_devices
+
+
+def get_local_network_ip_base():
+    exchange_manager = KeysExchangeManager(None)
+    return exchange_manager._local_network_ip_base
