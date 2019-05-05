@@ -1,7 +1,7 @@
 import json
 import requests
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, jsonify
 from ecdh import DiffieHellman, to_base64_dict, from_base64_dict
 
 from exchange_manager import (process_keys_exchange, get_local_network_ip_base,
@@ -11,11 +11,6 @@ from exchange_manager import (process_keys_exchange, get_local_network_ip_base,
 app = Flask(__name__)
 ecdh = DiffieHellman()
 workers_pubkeys = process_keys_exchange(ecdh.pem_pubkey)
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 
 @app.route('/keys_exchange', methods=['GET'])

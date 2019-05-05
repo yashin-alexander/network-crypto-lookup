@@ -15,7 +15,7 @@ CLIENT_APP_PORT = 5000
 
 class KeysExchangeManager():
     def __init__(self, pubkey):
-        self. worker_devices = {}
+        self.worker_devices = {}
         self.pubkey = pubkey
 
     @property
